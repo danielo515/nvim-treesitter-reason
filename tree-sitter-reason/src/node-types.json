@@ -1866,10 +1866,6 @@
           "named": true
         },
         {
-          "type": "let_custom",
-          "named": true
-        },
-        {
           "type": "list_pattern",
           "named": true
         },
@@ -1893,21 +1889,6 @@
           "type": "unit",
           "named": true
         },
-        {
-          "type": "value_identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "let_custom",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
         {
           "type": "value_identifier",
           "named": true
@@ -3198,6 +3179,10 @@
         {
           "type": "expression",
           "named": true
+        },
+        {
+          "type": "value_identifier",
+          "named": true
         }
       ]
     }
@@ -3748,6 +3733,10 @@
     "named": false
   },
   {
+    "type": "$",
+    "named": false
+  },
+  {
     "type": "${",
     "named": false
   },
@@ -3904,6 +3893,10 @@
     "named": false
   },
   {
+    "type": "[@@",
+    "named": false
+  },
+  {
     "type": "[|",
     "named": false
   },
@@ -3924,6 +3917,10 @@
     "named": false
   },
   {
+    "type": "and.",
+    "named": false
+  },
+  {
     "type": "as",
     "named": false
   },
@@ -3937,10 +3934,6 @@
   },
   {
     "type": "await",
-    "named": false
-  },
-  {
-    "type": "catch",
     "named": false
   },
   {
@@ -4076,10 +4069,6 @@
     "named": false
   },
   {
-    "type": "{js|",
-    "named": false
-  },
-  {
     "type": "|",
     "named": false
   },
@@ -4089,10 +4078,6 @@
   },
   {
     "type": "|]",
-    "named": false
-  },
-  {
-    "type": "|js}",
     "named": false
   },
   {

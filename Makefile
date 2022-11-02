@@ -1,3 +1,4 @@
+#!make
 DEST=tree-sitter-reason
 grammar=$(DEST)/grammar.js
 
@@ -7,6 +8,7 @@ all: clean pull
 clean:
 	rm -rf $(DEST)/*
 include .env
+export
 
 
 $(grammar): $(TS_REASON_DIR)/grammar.js

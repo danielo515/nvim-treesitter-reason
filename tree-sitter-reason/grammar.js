@@ -6,8 +6,8 @@ module.exports = grammar({
     $.comment,
     $._newline_and_comment,
     '"',
-    '|js}',
-    '{js|',
+    $._js_string_close,
+    $._js_string_open,
     $._template_chars,
     $._lparen,
     $._rparen,
@@ -52,6 +52,7 @@ module.exports = grammar({
     [$._jsx_attribute_value, $.pipe_expression],
     [$.function_type_parameters, $.function_type],
     [$.module_identifier_path, $.module_type_of],
+    [$.extension_expression, $.list],
   ],
 
   conflicts: $ => [
@@ -132,6 +133,12 @@ module.exports = grammar({
       $.declaration,
     ),
 
+    decorator_statement: $ => seq(
+      '[@@',
+      $.decorator_identifier,
+      optional($.decorator_arguments),
+      ']'
+    ),
 
     block: $ => prec.right(seq(
       '{',
@@ -358,7 +365,7 @@ module.exports = grammar({
       optional('mutable'),
       alias($.value_identifier, $.property_identifier),
       optional('?'),
-      $.type_annotation,
+      optional($.type_annotation),
     ),
 
     object_type: $ => seq(
@@ -422,10 +429,10 @@ module.exports = grammar({
       ),
     ),
 
-    let_custom: $ => seq('let.', $.value_identifier),
+    _let_custom: $ => seq('let.', $._word),
 
     let_binding: $ => seq(
-      choice('export', 'let', $.let_custom),
+      choice('export', 'let', $._let_custom),
       optional('rec'),
       $._let_binding,
     ),
@@ -446,7 +453,7 @@ module.exports = grammar({
       // show this doubt to the parser
       repeat($._newline),
       repeat($.decorator),
-      'and',
+      choice('and', seq('and.', $._word)),
       $._let_binding,
     ),
 
@@ -494,6 +501,7 @@ module.exports = grammar({
       $.object,
       $.tuple,
       $.array,
+      $.extension_expression,
       $.list,
       $.variant,
       $.polyvar,
@@ -505,7 +513,6 @@ module.exports = grammar({
       $.subscript_expression,
       $.member_expression,
       $.module_pack_expression,
-      $.extension_expression,
     ),
 
     parenthesized_expression: $ => seq(
@@ -698,7 +705,6 @@ module.exports = grammar({
         $.block,
         $.primary_expression,
       ),
-      'catch',
       '{',
       repeat($.switch_match),
       '}',
@@ -1131,13 +1137,16 @@ module.exports = grammar({
       ))
     )),
 
-    extension_expression: $ => prec('call', seq(
+    extension_expression: $ => prec(2, seq(
+      '[',
       repeat1('%'),
       choice(
         $._raw_js_extension,
         $._raw_gql_extension,
         $._simple_extension,
+        $._regex_extension,
       ),
+      ']'
     )),
 
     _simple_extension: $ => seq(
@@ -1145,30 +1154,29 @@ module.exports = grammar({
       optional($._extension_expression_payload),
     ),
 
+    _regex_extension: $ => seq(
+      alias(token('re'), $.extension_identifier),
+      alias($._regex_string, $.expression_statement),
+    ),
+
+    _regex_string: $ => $.string,
+
     _raw_js_extension: $ => seq(
       alias(token('raw'), $.extension_identifier),
-      '(',
       alias($._raw_js, $.expression_statement),
-      ')',
     ),
 
     _raw_js: $ => choice(
-      alias($._raw_js_template_string, $.template_string),
       alias($._raw_js_string, $.string),
+      alias($._raw_js_template_string, $.template_string),
     ),
 
     _raw_js_string: $ => alias($.string, $.raw_js),
 
     _raw_js_template_string: $ => seq(
-      token(seq(
-        optional(choice(
-          'j',
-          'js',
-        )),
-        '`',
-      )),
+      $._js_string_open,
       alias(repeat($._template_string_content), $.raw_js),
-      '`',
+      $._js_string_close,
     ),
 
     _raw_gql_extension: $ => seq(
@@ -1192,12 +1200,10 @@ module.exports = grammar({
     ),
 
     _extension_expression_payload: $ => seq(
-      '(',
       $._one_or_more_statements,
       // explicit newline here because it won’t be reported otherwise by the scanner
       // because we’re in parens
       optional($._newline),
-      ')',
     ),
 
     variant: $ => prec.dynamic(-1, seq(
@@ -1325,6 +1331,8 @@ module.exports = grammar({
 
     extension_identifier: $ => /[a-zA-Z0-9_\.]+/,
 
+    _word: $ => /[a-zA-Z0-9_]+/,
+
     number: $ => {
       const hex_literal = seq(
         choice('0x', '0X'),
@@ -1405,22 +1413,13 @@ module.exports = grammar({
       )
     )),
 
+    _js_string_open: $ => token(choice( '{j|', '{js|')),
+    _js_string_close: $ => token( choice( '|j}', '|js}',)),
+
     template_string: $ => seq(
-      token(
-        // choice(
-        //   '{j|',
-          '{js|',
-        //   '{json|',
-        // ),
-      ),
+      $._js_string_open,
       repeat($._template_string_content),
-      token(
-        // choice(
-        // '|j}',
-        '|js}',
-      //   '|json}',
-      // )
-    ),
+      $._js_string_close 
     ),
 
     _template_string_content: $ => choice(
@@ -1429,7 +1428,10 @@ module.exports = grammar({
       $.escape_sequence,
     ),
 
-    template_substitution: $ => seq('${', $.expression, '}'),
+    template_substitution: $ => choice(
+      seq('$', $.value_identifier),
+      seq('${', $.expression, '}'),
+    ),
 
     character: $ => seq(
       "'",
@@ -1477,5 +1479,3 @@ function commaSept(rule) {
 function sep1(delimiter, rule) {
   return seq(rule, repeat(seq(delimiter, rule)))
 }
-
-
